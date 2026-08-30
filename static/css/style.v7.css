@@ -195,6 +195,15 @@ body {
     gap: 0.5rem;
 }
 
+.chat-header .btn {
+    color: #fff;
+}
+
+.chat-header .icon-btn {
+    background: rgba(255,255,255,0.15);
+    border-color: transparent;
+}
+
 .user-name {
     font-size: 0.85rem;
     font-weight: 500;
