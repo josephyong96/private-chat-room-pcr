@@ -1,6 +1,6 @@
 const form = document.getElementById('add-member-form');
 const msgEl = document.getElementById('add-member-msg');
-const tableBody = document.getElementById('members-table');
+const membersList = document.getElementById('members-list');
 const clearBtn = document.getElementById('clear-chat-btn');
 
 const adminContainer = document.querySelector('.admin-container');
@@ -10,26 +10,29 @@ const currentUserId = adminContainer ? parseInt(adminContainer.dataset.userId ||
 async function loadMembers() {
     const res = await fetch('/api/members');
     const data = await res.json();
-    tableBody.innerHTML = '';
+    membersList.innerHTML = '';
     data.members.forEach(u => {
-        const tr = document.createElement('tr');
-        tr.dataset.id = u.id;
+        const card = document.createElement('div');
+        card.className = 'member-card';
+        card.dataset.id = u.id;
         const roleCell = isSuperuser && u.id !== currentUserId
             ? `<select class="role-select" data-id="${u.id}">
                  <option value="member" ${u.role === 'member' ? 'selected' : ''}>Member</option>
                  <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                </select>`
-            : u.role;
-        tr.innerHTML = `
-            <td>${u.username}</td>
-            <td>${u.display_name}</td>
-            <td>${roleCell}</td>
-            <td>
+            : `<span class="role-badge role-${u.role}">${u.role}</span>`;
+        card.innerHTML = `
+            <div class="member-info">
+                <div class="member-name">${u.display_name}</div>
+                <div class="member-username">@${u.username}</div>
+            </div>
+            <div class="member-role">${roleCell}</div>
+            <div class="member-actions">
                 <button class="btn btn-sm btn-warning reset-pw-btn" data-id="${u.id}">Reset PW</button>
                 ${u.role !== 'admin' && u.id !== currentUserId ? `<button class="btn btn-sm btn-danger remove-btn" data-id="${u.id}">Remove</button>` : ''}
-            </td>
+            </div>
         `;
-        tableBody.appendChild(tr);
+        membersList.appendChild(card);
     });
     bindActions();
 }

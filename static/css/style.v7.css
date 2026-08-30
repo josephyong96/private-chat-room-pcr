@@ -489,21 +489,69 @@ body {
     min-height: 1.2em;
 }
 
-.admin-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
-.admin-table th, .admin-table td {
-    text-align: left;
-    padding: 0.6rem;
-    border-bottom: 1px solid #e5e7eb;
+.member-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 0.9rem 1rem;
 }
 
-.admin-table th {
+.member-info {
+    flex: 1 1 120px;
+    min-width: 0;
+}
+
+.member-name {
     font-weight: 600;
-    color: #4b5563;
+    font-size: 1rem;
+    word-break: break-word;
+}
+
+.member-username {
+    font-size: 0.8rem;
+    color: #6b7280;
+    word-break: break-word;
+}
+
+.member-role {
+    flex: 0 0 auto;
+}
+
+.member-actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 0.4rem;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.999rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.role-badge.role-admin {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.role-select {
+    min-width: 6rem;
 }
 
 .danger-zone {

@@ -27,40 +27,32 @@
 
         <section class="admin-section">
             <h2>Members</h2>
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Display Name</th>
-                        <th>Role</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="members-table">
-                    {% for u in users %}
-                    <tr data-id="{{ u.id }}">
-                        <td>{{ u.username }}</td>
-                        <td>{{ u.display_name }}</td>
-                        <td>
-                            {% if current_user.is_superuser and u.id != current_user.id %}
-                                <select class="role-select" data-id="{{ u.id }}">
-                                    <option value="member" {% if u.role == 'member' %}selected{% endif %}>Member</option>
-                                    <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
-                                </select>
-                            {% else %}
-                                {{ u.role }}
-                            {% endif %}
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-warning reset-pw-btn" data-id="{{ u.id }}">Reset PW</button>
-                            {% if u.role != 'admin' and u.id != current_user.id %}
-                                <button class="btn btn-sm btn-danger remove-btn" data-id="{{ u.id }}">Remove</button>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="members-list" id="members-list">
+                {% for u in users %}
+                <div class="member-card" data-id="{{ u.id }}">
+                    <div class="member-info">
+                        <div class="member-name">{{ u.display_name }}</div>
+                        <div class="member-username">@{{ u.username }}</div>
+                    </div>
+                    <div class="member-role">
+                        {% if current_user.is_superuser and u.id != current_user.id %}
+                            <select class="role-select" data-id="{{ u.id }}">
+                                <option value="member" {% if u.role == 'member' %}selected{% endif %}>Member</option>
+                                <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
+                            </select>
+                        {% else %}
+                            <span class="role-badge role-{{ u.role }}">{{ u.role }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="member-actions">
+                        <button class="btn btn-sm btn-warning reset-pw-btn" data-id="{{ u.id }}">Reset PW</button>
+                        {% if u.role != 'admin' and u.id != current_user.id %}
+                            <button class="btn btn-sm btn-danger remove-btn" data-id="{{ u.id }}">Remove</button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </section>
 
         <section class="admin-section danger-zone">
