@@ -15,12 +15,10 @@
 </head>
 <body>
     <script>
-        // Unregister old PWA service workers so fresh CSS/JS always load
+        // Register service worker for push notifications
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for (let registration of registrations) {
-                    registration.unregister();
-                }
+            navigator.serviceWorker.register('/static/sw.js').catch(function(err) {
+                console.log('SW registration failed:', err);
             });
         }
     </script>

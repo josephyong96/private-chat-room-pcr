@@ -1,4 +1,6 @@
 import os
+import json
+import base64
 import hashlib
 import datetime
 from functools import wraps
@@ -6,6 +8,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from cryptography.hazmat.primitives import serialization
 import sqlite3
 import uuid
 
@@ -27,6 +30,62 @@ ALLOWED_MEDIA = {
     'audio': {'mp3', 'ogg', 'wav', 'm4a', 'webm'},
     'document': {'pdf'}
 }
+
+VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'mailto:admin@pcr.local')
+
+def get_or_create_vapid_keys():
+    keys_path = os.path.join(os.path.dirname(DB_PATH), 'vapid_keys.json')
+    if os.path.exists(keys_path):
+        with open(keys_path, 'r') as f:
+            return json.load(f)
+    from pywebpush import Vapid
+    v = Vapid()
+    v.generate_keys()
+    private_pem = v.private_pem().decode('utf-8')
+    public_raw = v.public_key.public_bytes(
+        serialization.Encoding.X962,
+        serialization.PublicFormat.UncompressedPoint
+    )
+    public_b64u = base64.urlsafe_b64encode(public_raw).decode('utf-8').rstrip('=')
+    keys = {
+        'private_pem': private_pem,
+        'public_key': public_b64u
+    }
+    with open(keys_path, 'w') as f:
+        json.dump(keys, f)
+    return keys
+
+VAPID_KEYS = get_or_create_vapid_keys()
+
+from pywebpush import webpush, WebPushException
+
+def send_push_to_all(sender_id, title, body):
+    conn = get_db()
+    subs = conn.execute(
+        "SELECT id, subscription FROM push_subscriptions WHERE user_id != ?",
+        (sender_id,)
+    ).fetchall()
+    conn.close()
+    payload = json.dumps({'title': title, 'body': body, 'url': '/chat'})
+    removed = []
+    for sub in subs:
+        try:
+            webpush(
+                subscription_info=json.loads(sub['subscription']),
+                data=payload,
+                vapid_private_key=VAPID_KEYS['private_pem'],
+                vapid_claims={'sub': VAPID_CLAIM_EMAIL}
+            )
+        except WebPushException as e:
+            if getattr(e, 'response', None) and e.response.status_code in (404, 410):
+                removed.append(sub['id'])
+        except Exception:
+            pass
+    if removed:
+        conn = get_db()
+        conn.executemany("DELETE FROM push_subscriptions WHERE id = ?", [(i,) for i in removed])
+        conn.commit()
+        conn.close()
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -67,6 +126,14 @@ def init_db():
             read_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (message_id, user_id)
         );
+
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            subscription TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id)
+        );
     """)
     # Create default admin if none exists
     cur.execute("SELECT id FROM users WHERE role = 'admin' LIMIT 1")
@@ -106,6 +173,18 @@ def migrate_db():
         cur.execute("ALTER TABLE users ADD COLUMN status TEXT")
     if 'profile_picture' not in user_columns:
         cur.execute("ALTER TABLE users ADD COLUMN profile_picture TEXT")
+    
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='push_subscriptions'")
+    if not cur.fetchone():
+        cur.execute("""
+            CREATE TABLE push_subscriptions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                subscription TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id)
+            )
+        """)
     
     conn.commit()
     conn.close()
@@ -410,6 +489,27 @@ def clear_chat():
     socketio.emit('chat_cleared', {}, room=ROOM_NAME)
     return jsonify({'success': True})
 
+@app.route('/api/vapid-public-key')
+@require_login
+def vapid_public_key():
+    return jsonify({'public_key': VAPID_KEYS.get('public_key')})
+
+@app.route('/api/push-subscribe', methods=['POST'])
+@require_login
+def push_subscribe():
+    data = request.get_json()
+    subscription = data.get('subscription')
+    if not subscription:
+        return jsonify({'success': False, 'error': 'Subscription required.'}), 400
+    conn = get_db()
+    conn.execute(
+        "INSERT OR REPLACE INTO push_subscriptions (user_id, subscription) VALUES (?, ?)",
+        (session['user_id'], json.dumps(subscription))
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
 @app.route('/upload', methods=['POST'])
 @require_login
 def upload():
@@ -532,6 +632,19 @@ def handle_send_message(data):
         'created_at': row['created_at']
     }
     emit('new_message', payload, room=ROOM_NAME)
+
+    # Send push notifications to offline users
+    try:
+        preview = (row['content'] or '')[:60]
+        if not preview and row['file_name']:
+            preview = '📎 Attachment'
+        send_push_to_all(
+            user['id'],
+            f"{row['display_name']} in PCR",
+            preview or 'New message'
+        )
+    except Exception:
+        pass
 
 @socketio.on('mark_read')
 def handle_mark_read(data):
