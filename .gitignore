@@ -7,3 +7,4 @@ uploads/
 .venv/
 venv/
 .DS_Store
+vapid_keys.json
