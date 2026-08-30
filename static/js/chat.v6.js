@@ -155,10 +155,17 @@ voiceBtn.addEventListener('click', async () => {
             pendingFile = { file };
             previewEl.textContent = 'Voice note ready';
             stream.getTracks().forEach(t => t.stop());
+            voiceBtn.textContent = '🎤';
+        };
+        mediaRecorder.onerror = () => {
+            stream.getTracks().forEach(t => t.stop());
+            voiceBtn.textContent = '🎤';
+            alert('Recording failed.');
         };
         mediaRecorder.start();
         voiceBtn.textContent = '⏹';
     } catch (e) {
+        voiceBtn.textContent = '🎤';
         alert('Microphone access denied or not supported.');
     }
 });
