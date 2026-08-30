@@ -6,11 +6,6 @@ html {
     height: -webkit-fill-available;
 }
 
-html, body {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -306,10 +301,20 @@ body {
 
 /* Admin */
 .admin-container {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    height: -webkit-fill-available;
     max-width: 800px;
     margin: 0 auto;
-    padding: 1rem;
-    padding-bottom: max(2rem, env(safe-area-inset-bottom));
+    overflow: hidden;
+}
+
+.admin-scrollable {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 1rem 1rem;
 }
 
 .admin-header {
