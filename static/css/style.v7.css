@@ -125,6 +125,19 @@ body {
 .icon-btn svg {
     display: block;
 }
+
+.form-control, select.form-control {
+    padding: 0.6rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    background: #fff;
+}
+
+.role-select {
+    min-width: 6rem;
+}
+
 .alert {
     padding: 0.75rem;
     border-radius: 0.5rem;

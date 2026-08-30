@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Admin - PCR{% endblock %}
 {% block content %}
-<div class="admin-container">
+<div class="admin-container" data-superuser="{{ 'true' if current_user.is_superuser else 'false' }}" data-user-id="{{ current_user.id }}">
     <header class="admin-header">
         <h1>Admin Panel</h1>
         <a href="{{ url_for('chat') }}" class="btn btn-sm">Back to Chat</a>
@@ -14,6 +14,12 @@
                 <input type="text" id="new-username" placeholder="Username" required>
                 <input type="text" id="new-display-name" placeholder="Display name" required>
                 <input type="password" id="new-password" placeholder="Password" required>
+                {% if current_user.is_superuser %}
+                    <select id="new-role" class="form-control">
+                        <option value="member" selected>Member</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                {% endif %}
                 <button type="submit" class="btn btn-primary">Add Member</button>
             </form>
             <p id="add-member-msg" class="form-msg"></p>
@@ -35,10 +41,19 @@
                     <tr data-id="{{ u.id }}">
                         <td>{{ u.username }}</td>
                         <td>{{ u.display_name }}</td>
-                        <td>{{ u.role }}</td>
+                        <td>
+                            {% if current_user.is_superuser and u.id != current_user.id %}
+                                <select class="role-select" data-id="{{ u.id }}">
+                                    <option value="member" {% if u.role == 'member' %}selected{% endif %}>Member</option>
+                                    <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
+                                </select>
+                            {% else %}
+                                {{ u.role }}
+                            {% endif %}
+                        </td>
                         <td>
                             <button class="btn btn-sm btn-warning reset-pw-btn" data-id="{{ u.id }}">Reset PW</button>
-                            {% if u.role != 'admin' %}
+                            {% if u.role != 'admin' and u.id != current_user.id %}
                                 <button class="btn btn-sm btn-danger remove-btn" data-id="{{ u.id }}">Remove</button>
                             {% endif %}
                         </td>

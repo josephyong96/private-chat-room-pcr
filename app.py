@@ -43,6 +43,7 @@ def init_db():
             display_name TEXT NOT NULL,
             password_hash TEXT NOT NULL,
             role TEXT NOT NULL DEFAULT 'member',
+            is_superuser INTEGER NOT NULL DEFAULT 0,
             is_active INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
@@ -70,8 +71,8 @@ def init_db():
     if not cur.fetchone():
         pw_hash = generate_password_hash(DEFAULT_ADMIN_PASSWORD)
         cur.execute(
-            "INSERT INTO users (username, display_name, password_hash, role) VALUES (?, ?, ?, ?)",
-            ('admin', 'Admin', pw_hash, 'admin')
+            "INSERT INTO users (username, display_name, password_hash, role, is_superuser) VALUES (?, ?, ?, ?, ?)",
+            ('admin', 'Admin', pw_hash, 'admin', 1)
         )
         conn.commit()
     conn.close()
@@ -91,6 +92,14 @@ def migrate_db():
         cur.execute("ALTER TABLE messages ADD COLUMN media_type TEXT")
     if 'deleted' not in columns:
         cur.execute("ALTER TABLE messages ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0")
+    
+    # Migrate users table
+    cur.execute("PRAGMA table_info(users)")
+    user_columns = {row[1] for row in cur.fetchall()}
+    if 'is_superuser' not in user_columns:
+        cur.execute("ALTER TABLE users ADD COLUMN is_superuser INTEGER NOT NULL DEFAULT 0")
+        # Promote the very first admin as superuser
+        cur.execute("UPDATE users SET is_superuser = 1 WHERE id = (SELECT MIN(id) FROM users WHERE role = 'admin')")
     
     conn.commit()
     conn.close()
@@ -178,7 +187,8 @@ def admin():
         "SELECT id, username, display_name, role, is_active, created_at FROM users ORDER BY created_at DESC"
     ).fetchall()
     conn.close()
-    return render_template('admin.html', users=users)
+    user = current_user()
+    return render_template('admin.html', users=users, current_user=user)
 
 @app.route('/api/messages')
 @require_login
@@ -227,15 +237,24 @@ def add_member():
     username = (data.get('username') or '').strip().lower()
     display_name = (data.get('display_name') or '').strip()
     password = data.get('password', '')
+    requested_role = (data.get('role') or 'member').strip().lower()
     if not username or not display_name or not password:
         return jsonify({'success': False, 'error': 'Username, display name and password are required.'}), 400
     if len(password) < 4:
         return jsonify({'success': False, 'error': 'Password must be at least 4 characters.'}), 400
+    if requested_role not in ('member', 'admin'):
+        return jsonify({'success': False, 'error': 'Invalid role.'}), 400
+
+    conn = get_db()
+    current = conn.execute("SELECT is_superuser FROM users WHERE id = ?", (session['user_id'],)).fetchone()
+    if requested_role == 'admin' and (not current or not current['is_superuser']):
+        conn.close()
+        return jsonify({'success': False, 'error': 'Only superuser can create admins.'}), 403
+
     try:
-        conn = get_db()
         conn.execute(
             "INSERT INTO users (username, display_name, password_hash, role) VALUES (?, ?, ?, ?)",
-            (username, display_name, generate_password_hash(password), 'member')
+            (username, display_name, generate_password_hash(password), requested_role)
         )
         conn.commit()
         conn.close()
@@ -274,6 +293,35 @@ def reset_password():
         "UPDATE users SET password_hash = ? WHERE id = ?",
         (generate_password_hash(new_password), user_id)
     )
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/admin/change-role', methods=['POST'])
+@require_admin
+def change_role():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    new_role = (data.get('role') or '').strip().lower()
+    if not user_id or not new_role:
+        return jsonify({'success': False, 'error': 'User ID and role required.'}), 400
+    if new_role not in ('member', 'admin'):
+        return jsonify({'success': False, 'error': 'Invalid role.'}), 400
+    if int(user_id) == session['user_id']:
+        return jsonify({'success': False, 'error': 'Cannot change your own role.'}), 400
+
+    conn = get_db()
+    current = conn.execute("SELECT is_superuser FROM users WHERE id = ?", (session['user_id'],)).fetchone()
+    if not current or not current['is_superuser']:
+        conn.close()
+        return jsonify({'success': False, 'error': 'Only superuser can change roles.'}), 403
+
+    target = conn.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not target:
+        conn.close()
+        return jsonify({'success': False, 'error': 'User not found.'}), 404
+
+    conn.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, user_id))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
