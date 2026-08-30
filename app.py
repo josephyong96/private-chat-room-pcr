@@ -78,6 +78,25 @@ def init_db():
 
 init_db()
 
+def migrate_db():
+    """Add columns introduced in newer app versions to existing databases."""
+    conn = get_db()
+    cur = conn.cursor()
+    
+    # Migrate messages table
+    cur.execute("PRAGMA table_info(messages)")
+    columns = {row[1] for row in cur.fetchall()}
+    
+    if 'media_type' not in columns:
+        cur.execute("ALTER TABLE messages ADD COLUMN media_type TEXT")
+    if 'deleted' not in columns:
+        cur.execute("ALTER TABLE messages ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0")
+    
+    conn.commit()
+    conn.close()
+
+migrate_db()
+
 def require_login(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
