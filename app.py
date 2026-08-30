@@ -314,10 +314,21 @@ def upload():
     ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
 
     media_type = None
-    for mt, exts in ALLOWED_MEDIA.items():
-        if ext in exts:
-            media_type = mt
-            break
+    # Prefer the file's actual MIME type; fall back to extension
+    content_type = (file.content_type or '').lower()
+    if content_type.startswith('image/'):
+        media_type = 'image'
+    elif content_type.startswith('video/'):
+        media_type = 'video'
+    elif content_type.startswith('audio/'):
+        media_type = 'audio'
+    elif content_type == 'application/pdf':
+        media_type = 'document'
+    else:
+        for mt, exts in ALLOWED_MEDIA.items():
+            if ext in exts:
+                media_type = mt
+                break
     if not media_type:
         return jsonify({'success': False, 'error': 'File type not allowed.'}), 400
 
