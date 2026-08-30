@@ -304,6 +304,10 @@ body {
     max-width: 800px;
     margin: 0 auto;
     padding: 1rem;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .admin-header {
