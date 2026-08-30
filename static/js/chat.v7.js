@@ -101,6 +101,15 @@ function setupVoiceNotePlayer(container) {
     });
 }
 
+function getAvatarHtml(msg) {
+    const name = msg.sender_name || '?';
+    const initial = name.charAt(0).toUpperCase();
+    if (msg.profile_picture) {
+        return `<img src="/uploads/${encodeURIComponent(msg.profile_picture)}" alt="${escapeHtml(name)}" class="message-avatar">`;
+    }
+    return `<div class="message-avatar avatar-initial">${escapeHtml(initial)}</div>`;
+}
+
 function renderMessage(msg) {
     const isOwn = msg.sender_id === currentUserId;
     const div = document.createElement('div');
@@ -133,14 +142,20 @@ function renderMessage(msg) {
         deleteBtn = `<button class="delete-btn" title="Delete message">×</button>`;
     }
 
+    const avatarHtml = getAvatarHtml(msg);
+
     div.innerHTML = `
-        <div class="meta">
-            <span>${escapeHtml(msg.sender_name)}</span>
-            <span>${formatTime(msg.created_at)}</span>
+        ${isOwn ? '' : avatarHtml}
+        <div class="message-bubble">
+            <div class="meta">
+                <span>${escapeHtml(msg.sender_name)}</span>
+                <span>${formatTime(msg.created_at)}</span>
+            </div>
+            <div class="text">${escapeHtml(msg.content || '')}</div>
+            ${mediaHtml}
+            ${deleteBtn}
         </div>
-        <div class="text">${escapeHtml(msg.content || '')}</div>
-        ${mediaHtml}
-        ${deleteBtn}
+        ${isOwn ? avatarHtml : ''}
     `;
 
     if (isAdmin) {

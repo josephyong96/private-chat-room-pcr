@@ -334,13 +334,13 @@ def admin():
 def api_messages():
     conn = get_db()
     rows = conn.execute("""
-        SELECT m.id, m.sender_id, m.content, m.file_name, m.file_type, m.media_type, m.created_at, m.deleted,
-               u.display_name, u.username
-        FROM messages m
-        JOIN users u ON m.sender_id = u.id
-        WHERE m.deleted = 0
-        ORDER BY m.id DESC
-        LIMIT 200
+    SELECT m.id, m.sender_id, m.content, m.file_name, m.file_type, m.media_type, m.created_at, m.deleted,
+           u.display_name, u.username, u.profile_picture
+    FROM messages m
+    JOIN users u ON m.sender_id = u.id
+    WHERE m.deleted = 0
+    ORDER BY m.id DESC
+    LIMIT 200
     """).fetchall()
     conn.close()
     messages = []
@@ -350,6 +350,7 @@ def api_messages():
             'sender_id': r['sender_id'],
             'sender_name': r['display_name'],
             'username': r['username'],
+            'profile_picture': r['profile_picture'],
             'content': r['content'],
             'file_name': r['file_name'],
             'file_type': r['file_type'],
@@ -619,7 +620,7 @@ def handle_send_message(data):
     message_id = cur.lastrowid
     conn.commit()
     row = conn.execute("""
-        SELECT m.*, u.display_name, u.username FROM messages m
+        SELECT m.*, u.display_name, u.username, u.profile_picture FROM messages m
         JOIN users u ON m.sender_id = u.id WHERE m.id = ?
     """, (message_id,)).fetchone()
     conn.close()
@@ -629,6 +630,7 @@ def handle_send_message(data):
         'sender_id': row['sender_id'],
         'sender_name': row['display_name'],
         'username': row['username'],
+        'profile_picture': row['profile_picture'],
         'content': row['content'],
         'file_name': row['file_name'],
         'file_type': row['file_type'],
