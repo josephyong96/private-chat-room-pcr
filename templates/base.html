@@ -10,10 +10,20 @@
     <title>{% block title %}PCR{% endblock %}</title>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.v6.css') }}">
     {% block head %}{% endblock %}
 </head>
 <body>
+    <script>
+        // Unregister old PWA service workers so fresh CSS/JS always load
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+    </script>
     {% block content %}{% endblock %}
     {% block scripts %}{% endblock %}
 </body>
