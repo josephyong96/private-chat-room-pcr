@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pcr-v4';
+const CACHE_NAME = 'pcr-v5';
 const STATIC_ASSETS = [
   '/',
   '/login',
