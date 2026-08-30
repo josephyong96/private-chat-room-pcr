@@ -316,12 +316,13 @@ def upload():
     media_type = None
     # Prefer the file's actual MIME type; fall back to extension
     content_type = (file.content_type or '').lower()
+    is_voice_note = 'voice-note' in filename.lower()
     if content_type.startswith('image/'):
         media_type = 'image'
+    elif content_type.startswith('audio/') or is_voice_note:
+        media_type = 'audio'
     elif content_type.startswith('video/'):
         media_type = 'video'
-    elif content_type.startswith('audio/'):
-        media_type = 'audio'
     elif content_type == 'application/pdf':
         media_type = 'document'
     else:
