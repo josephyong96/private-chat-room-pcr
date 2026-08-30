@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Profile - PCR{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+{% endblock %}
 {% block content %}
 <div class="admin-container">
     <header class="admin-header">
@@ -17,17 +20,19 @@
         {% endwith %}
 
         <section class="admin-section">
-            <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data">
+            <form id="profile-form" method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data">
                 <div class="profile-picture-wrap">
-                    {% if user.profile_picture %}
-                        <img src="/uploads/{{ user.profile_picture }}" alt="Profile" class="profile-picture-preview">
-                    {% else %}
-                        <div class="profile-picture-placeholder">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        </div>
-                    {% endif %}
-                    <label for="profile_picture" class="btn btn-sm">Change Picture</label>
-                    <input type="file" id="profile_picture" name="profile_picture" accept="image/*" hidden>
+                    <div class="profile-picture-circle">
+                        {% if user.profile_picture %}
+                            <img src="/uploads/{{ user.profile_picture }}" alt="Profile" class="profile-picture-preview" id="profile-preview">
+                        {% else %}
+                            <div class="profile-picture-placeholder" id="profile-preview">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <label for="profile_picture_input" class="btn btn-sm">Change Picture</label>
+                    <input type="file" id="profile_picture_input" name="profile_picture" accept="image/*" hidden>
                     <span id="file-name" class="file-name"></span>
                 </div>
 
@@ -42,18 +47,108 @@
                 </div>
 
                 <div class="profile-actions">
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="submit" class="btn btn-primary" id="save-btn">Save</button>
                     <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
                 </div>
             </form>
         </section>
     </main>
 </div>
+
+<div class="cropper-modal" id="cropper-modal">
+    <div class="cropper-modal-content">
+        <div class="cropper-wrap">
+            <img id="cropper-image" src="" alt="Crop preview">
+        </div>
+        <div class="cropper-actions">
+            <button type="button" class="btn btn-ghost" id="crop-cancel">Cancel</button>
+            <button type="button" class="btn btn-primary" id="crop-confirm">Crop & Use</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <script>
-    document.getElementById('profile_picture').addEventListener('change', function() {
-        document.getElementById('file-name').textContent = this.files.length ? this.files[0].name : '';
+    const form = document.getElementById('profile-form');
+    const fileInput = document.getElementById('profile_picture_input');
+    const modal = document.getElementById('cropper-modal');
+    const cropperImage = document.getElementById('cropper-image');
+    const saveBtn = document.getElementById('save-btn');
+    let cropper = null;
+    let croppedFile = null;
+
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        cropperImage.src = url;
+        modal.style.display = 'flex';
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(cropperImage, {
+            aspectRatio: 1,
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 1,
+            cropBoxResizable: false,
+            cropBoxMovable: false,
+            guides: false,
+            center: false,
+            highlight: false,
+            background: false,
+            scalable: true,
+            zoomable: true,
+            toggleDragModeOnDblclick: false,
+            ready() {
+                this.cropper.zoomTo(1);
+            }
+        });
+    });
+
+    document.getElementById('crop-cancel').addEventListener('click', function() {
+        modal.style.display = 'none';
+        fileInput.value = '';
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+    });
+
+    document.getElementById('crop-confirm').addEventListener('click', function() {
+        if (!cropper) return;
+        const canvas = cropper.getCroppedCanvas({ width: 400, height: 400, fillColor: '#fff' });
+        canvas.toBlob(function(blob) {
+            croppedFile = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
+            const preview = document.getElementById('profile-preview');
+            if (preview.tagName === 'IMG') {
+                preview.src = URL.createObjectURL(blob);
+            } else {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(blob);
+                img.alt = 'Profile';
+                img.className = 'profile-picture-preview';
+                img.id = 'profile-preview';
+                preview.parentNode.replaceChild(img, preview);
+            }
+            modal.style.display = 'none';
+            cropper.destroy();
+            cropper = null;
+        }, 'image/jpeg', 0.9);
+    });
+
+    form.addEventListener('submit', function(e) {
+        if (!croppedFile) return;
+        e.preventDefault();
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        const data = new FormData(form);
+        data.set('profile_picture', croppedFile);
+        fetch(form.action, { method: 'POST', body: data })
+            .then(() => window.location.href = form.action)
+            .catch(() => {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+            });
     });
 </script>
 {% endblock %}
