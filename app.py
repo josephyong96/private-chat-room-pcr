@@ -577,6 +577,11 @@ def upload():
         'media_type': media_type
     })
 
+@app.route('/sw.js')
+@require_login
+def service_worker():
+    return send_from_directory('static', 'sw.js', mimetype='application/javascript')
+
 @app.route('/uploads/<path:filename>')
 @require_login
 def uploaded_file(filename):
