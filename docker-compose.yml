@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  pcr:
+    build: .
+    container_name: private-chat-room-pcr
+    restart: unless-stopped
+    ports:
+      - "8787:5000"
+    volumes:
+      - ./data:/data
+      - ./uploads:/app/uploads
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin1234}
+      - DB_PATH=/data/chat.db
+      - UPLOAD_DIR=/app/uploads
+      - PORT=5000

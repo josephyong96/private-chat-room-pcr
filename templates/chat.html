@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Chat - PCR{% endblock %}
+{% block content %}
+<div class="app-container">
+    <header class="chat-header">
+        <div class="header-left">
+            <h1>Private Chat Room</h1>
+            <span class="status" id="connection-status">Connecting...</span>
+        </div>
+        <div class="header-right">
+            <span class="user-name">{{ user.display_name }}</span>
+            {% if user.role == 'admin' %}
+                <a href="{{ url_for('admin') }}" class="btn btn-sm">Admin</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-ghost">Logout</a>
+        </div>
+    </header>
+    <main class="chat-main">
+        <div class="messages" id="messages"></div>
+    </main>
+    <footer class="chat-footer">
+        <div class="input-area">
+            <button type="button" class="attach-btn" id="attach-btn" title="Attach file">+</button>
+            <input type="file" id="file-input" accept="image/*,video/*,audio/*,.pdf" hidden>
+            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+            <button type="button" class="voice-btn" id="voice-btn" title="Voice note">🎤</button>
+            <button type="button" class="send-btn" id="send-btn">Send</button>
+        </div>
+        <div class="preview" id="file-preview"></div>
+    </footer>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+const currentUserId = {{ user.id }};
+const currentUserName = "{{ user.display_name }}";
+const isAdmin = {{ 'true' if user.role == 'admin' else 'false' }};
+const room = "{{ room }}";
+</script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

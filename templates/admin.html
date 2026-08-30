@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Admin - PCR{% endblock %}
+{% block content %}
+<div class="admin-container">
+    <header class="admin-header">
+        <h1>Admin Panel</h1>
+        <a href="{{ url_for('chat') }}" class="btn btn-sm">Back to Chat</a>
+    </header>
+
+    <section class="admin-section">
+        <h2>Add Member</h2>
+        <form id="add-member-form" class="inline-form">
+            <input type="text" id="new-username" placeholder="Username" required>
+            <input type="text" id="new-display-name" placeholder="Display name" required>
+            <input type="password" id="new-password" placeholder="Password" required>
+            <button type="submit" class="btn btn-primary">Add Member</button>
+        </form>
+        <p id="add-member-msg" class="form-msg"></p>
+    </section>
+
+    <section class="admin-section">
+        <h2>Members</h2>
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Display Name</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="members-table">
+                {% for u in users %}
+                <tr data-id="{{ u.id }}">
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.display_name }}</td>
+                    <td>{{ u.role }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning reset-pw-btn" data-id="{{ u.id }}">Reset PW</button>
+                        {% if u.role != 'admin' %}
+                            <button class="btn btn-sm btn-danger remove-btn" data-id="{{ u.id }}">Remove</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="admin-section danger-zone">
+        <h2>Danger Zone</h2>
+        <button id="clear-chat-btn" class="btn btn-danger">Clear Entire Chat</button>
+        <p class="hint">Only admin can clear chat history. This action cannot be undone.</p>
+    </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

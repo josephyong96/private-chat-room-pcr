@@ -1,0 +1,374 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html {
+    height: -webkit-fill-available;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #f3f4f6;
+    color: #111827;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+}
+
+/* Auth */
+.auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: 1rem;
+}
+
+.auth-card {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 1rem;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.logo img {
+    width: 80px;
+    height: 80px;
+    border-radius: 1rem;
+}
+
+.auth-card h1 {
+    margin: 1rem 0 0.25rem;
+    font-size: 1.5rem;
+}
+
+.subtitle {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: #e5e7eb;
+    color: #111827;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.btn-primary {
+    background: #2563eb;
+    color: #fff;
+    width: 100%;
+}
+
+.btn-danger {
+    background: #dc2626;
+    color: #fff;
+}
+
+.btn-warning {
+    background: #f59e0b;
+    color: #fff;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: #2563eb;
+}
+
+.btn-sm {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.alert {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+/* Chat */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: #2563eb;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.chat-header h1 {
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.status {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.chat-main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f3f4f6;
+}
+
+.messages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.message {
+    max-width: 80%;
+    padding: 0.6rem 0.9rem;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    position: relative;
+}
+
+.message.own {
+    align-self: flex-end;
+    background: #dbeafe;
+}
+
+.message .meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.message .text {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.message img, .message video {
+    max-width: 100%;
+    border-radius: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.message audio {
+    width: 100%;
+    margin-top: 0.25rem;
+}
+
+.message .file-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.message .delete-btn {
+    position: absolute;
+    top: -0.4rem;
+    right: -0.4rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: none;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+}
+
+.message:hover .delete-btn {
+    display: block;
+}
+
+.chat-footer {
+    padding: 0.5rem 0.75rem;
+    background: #fff;
+    border-top: 1px solid #e5e7eb;
+    flex-shrink: 0;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.input-area {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.input-area input[type="text"] {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 1.5rem;
+    font-size: 1rem;
+}
+
+.attach-btn, .voice-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.send-btn {
+    padding: 0.75rem 1rem;
+    border-radius: 1.5rem;
+    border: none;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.preview {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+/* Admin */
+.admin-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.admin-section {
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.admin-section h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+}
+
+.inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.inline-form input {
+    flex: 1;
+    min-width: 140px;
+    padding: 0.6rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+}
+
+.form-msg {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    min-height: 1.2em;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.admin-table th, .admin-table td {
+    text-align: left;
+    padding: 0.6rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-table th {
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.danger-zone {
+    border: 1px solid #fecaca;
+}
+
+.hint {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+}
