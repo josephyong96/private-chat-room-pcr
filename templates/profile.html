@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Profile - PCR{% endblock %}
+{% block content %}
+<div class="admin-container">
+    <header class="admin-header">
+        <h1>Edit Profile</h1>
+        <a href="{{ url_for('chat') }}" class="btn btn-sm">Back to Chat</a>
+    </header>
+
+    <main class="admin-scrollable">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <section class="admin-section">
+            <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data">
+                <div class="profile-picture-wrap">
+                    {% if user.profile_picture %}
+                        <img src="/uploads/{{ user.profile_picture }}" alt="Profile" class="profile-picture-preview">
+                    {% else %}
+                        <div class="profile-picture-placeholder">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        </div>
+                    {% endif %}
+                    <label for="profile_picture" class="btn btn-sm">Change Picture</label>
+                    <input type="file" id="profile_picture" name="profile_picture" accept="image/*" hidden>
+                    <span id="file-name" class="file-name"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="display_name">Display Name</label>
+                    <input type="text" id="display_name" name="display_name" value="{{ user.display_name }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <input type="text" id="status" name="status" value="{{ user.status or '' }}" placeholder="What's on your mind?">
+                </div>
+
+                <div class="profile-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+    document.getElementById('profile_picture').addEventListener('change', function() {
+        document.getElementById('file-name').textContent = this.files.length ? this.files[0].name : '';
+    });
+</script>
+{% endblock %}

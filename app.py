@@ -44,6 +44,8 @@ def init_db():
             password_hash TEXT NOT NULL,
             role TEXT NOT NULL DEFAULT 'member',
             is_superuser INTEGER NOT NULL DEFAULT 0,
+            status TEXT,
+            profile_picture TEXT,
             is_active INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
@@ -100,6 +102,10 @@ def migrate_db():
         cur.execute("ALTER TABLE users ADD COLUMN is_superuser INTEGER NOT NULL DEFAULT 0")
         # Promote the very first admin as superuser
         cur.execute("UPDATE users SET is_superuser = 1 WHERE id = (SELECT MIN(id) FROM users WHERE role = 'admin')")
+    if 'status' not in user_columns:
+        cur.execute("ALTER TABLE users ADD COLUMN status TEXT")
+    if 'profile_picture' not in user_columns:
+        cur.execute("ALTER TABLE users ADD COLUMN profile_picture TEXT")
     
     conn.commit()
     conn.close()
@@ -172,6 +178,60 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.route('/profile', methods=['GET', 'POST'])
+@require_login
+def profile():
+    user = current_user()
+    if request.method == 'POST':
+        display_name = (request.form.get('display_name') or '').strip()
+        status_text = (request.form.get('status') or '').strip()
+        if not display_name:
+            flash('Display name is required.', 'error')
+            return redirect(url_for('profile'))
+
+        profile_picture = user['profile_picture']
+        file = request.files.get('profile_picture')
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+            if ext not in ALLOWED_MEDIA['image']:
+                flash('Profile picture must be an image.', 'error')
+                return redirect(url_for('profile'))
+            try:
+                from PIL import Image
+                file.stream.seek(0)
+                if ext in ('heic', 'heif'):
+                    from pillow_heif import register_heif_opener
+                    register_heif_opener()
+                img = Image.open(file.stream)
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    img = img.convert('RGB')
+                # Square crop from center then resize
+                size = min(img.width, img.height)
+                left = (img.width - size) // 2
+                top = (img.height - size) // 2
+                img = img.crop((left, top, left + size, top + size))
+                img.thumbnail((400, 400), Image.Resampling.LANCZOS)
+                unique_name = f"pp_{uuid.uuid4().hex}.jpg"
+                path = os.path.join(UPLOAD_DIR, unique_name)
+                img.save(path, 'JPEG', quality=85, optimize=True)
+                profile_picture = unique_name
+            except Exception as e:
+                flash('Failed to process image: ' + str(e), 'error')
+                return redirect(url_for('profile'))
+
+        conn = get_db()
+        conn.execute(
+            "UPDATE users SET display_name = ?, status = ?, profile_picture = ? WHERE id = ?",
+            (display_name, status_text, profile_picture, session['user_id'])
+        )
+        conn.commit()
+        conn.close()
+        flash('Profile updated.', 'success')
+        return redirect(url_for('profile'))
+
+    return render_template('profile.html', user=user)
 
 @app.route('/chat')
 @require_login
