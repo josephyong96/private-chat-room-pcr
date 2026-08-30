@@ -78,13 +78,12 @@
     let cropper = null;
     let croppedFile = null;
 
-    fileInput.addEventListener('change', function() {
-        const file = this.files[0];
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        cropperImage.src = url;
-        modal.style.display = 'flex';
-        if (cropper) cropper.destroy();
+    function initCropper() {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        cropperImage.style.maxWidth = 'none';
         cropper = new Cropper(cropperImage, {
             aspectRatio: 1,
             viewMode: 1,
@@ -98,16 +97,35 @@
             background: false,
             scalable: true,
             zoomable: true,
-            toggleDragModeOnDblclick: false,
-            ready() {
-                this.cropper.zoomTo(1);
-            }
+            zoomOnTouch: true,
+            zoomOnWheel: true,
+            toggleDragModeOnDblclick: false
         });
+    }
+
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+        croppedFile = null;
+        const url = URL.createObjectURL(file) + '?t=' + Date.now();
+        cropperImage.src = '';
+        modal.style.display = 'flex';
+        cropperImage.onload = function() {
+            initCropper();
+            cropperImage.onload = null;
+        };
+        cropperImage.onerror = function() {
+            alert('Failed to load image.');
+            modal.style.display = 'none';
+            cropperImage.onerror = null;
+        };
+        cropperImage.src = url;
     });
 
     document.getElementById('crop-cancel').addEventListener('click', function() {
         modal.style.display = 'none';
         fileInput.value = '';
+        croppedFile = null;
         if (cropper) {
             cropper.destroy();
             cropper = null;
@@ -117,14 +135,23 @@
     document.getElementById('crop-confirm').addEventListener('click', function() {
         if (!cropper) return;
         const canvas = cropper.getCroppedCanvas({ width: 400, height: 400, fillColor: '#fff' });
+        if (!canvas) {
+            alert('Could not crop image. Please try again.');
+            return;
+        }
         canvas.toBlob(function(blob) {
+            if (!blob) {
+                alert('Could not process image.');
+                return;
+            }
             croppedFile = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
             const preview = document.getElementById('profile-preview');
-            if (preview.tagName === 'IMG') {
-                preview.src = URL.createObjectURL(blob);
-            } else {
+            const objectUrl = URL.createObjectURL(blob);
+            if (preview && preview.tagName === 'IMG') {
+                preview.src = objectUrl;
+            } else if (preview) {
                 const img = document.createElement('img');
-                img.src = URL.createObjectURL(blob);
+                img.src = objectUrl;
                 img.alt = 'Profile';
                 img.className = 'profile-picture-preview';
                 img.id = 'profile-preview';
@@ -137,12 +164,20 @@
     });
 
     form.addEventListener('submit', function(e) {
-        if (!croppedFile) return;
+        if (!croppedFile) {
+            // No new cropped image; allow normal submit unless a raw file is selected
+            if (fileInput.files.length) {
+                e.preventDefault();
+                alert('Please finish cropping the photo first.');
+            }
+            return;
+        }
         e.preventDefault();
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
         const data = new FormData(form);
-        data.set('profile_picture', croppedFile);
+        data.delete('profile_picture');
+        data.append('profile_picture', croppedFile);
         fetch(form.action, { method: 'POST', body: data })
             .then(() => window.location.href = form.action)
             .catch(() => {

@@ -635,11 +635,6 @@ body {
     background: #111;
 }
 
-.cropper-wrap img {
-    max-width: 100%;
-    display: block;
-}
-
 .cropper-actions {
     display: flex;
     justify-content: flex-end;
