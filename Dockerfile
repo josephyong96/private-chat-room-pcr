@@ -11,4 +11,4 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["gunicorn", "-k", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "--reload", "app:app"]
+CMD ["python", "app.py"]
