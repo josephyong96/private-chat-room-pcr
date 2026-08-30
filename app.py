@@ -327,6 +327,10 @@ def upload():
     try:
         if media_type == 'image':
             from PIL import Image
+            file.stream.seek(0)
+            if ext in ('heic', 'heif'):
+                from pillow_heif import register_heif_opener
+                register_heif_opener()
             img = Image.open(file.stream)
             if img.mode in ('RGBA', 'LA', 'P'):
                 img = img.convert('RGB')
