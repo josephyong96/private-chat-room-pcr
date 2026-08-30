@@ -166,5 +166,5 @@ voiceBtn.addEventListener('click', async () => {
 loadHistory();
 
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/sw.js');
+    navigator.serviceWorker.register('/static/sw.js?v=5');
 }
