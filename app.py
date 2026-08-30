@@ -325,16 +325,19 @@ def upload():
     path = os.path.join(UPLOAD_DIR, unique_name)
 
     try:
-        if ext in ('heic', 'heif'):
+        if media_type == 'image':
             from PIL import Image
-            from pillow_heif import register_heif_opener
-            register_heif_opener()
             img = Image.open(file.stream)
-            if img.mode != 'RGB':
+            if img.mode in ('RGBA', 'LA', 'P'):
                 img = img.convert('RGB')
+            # Resize if larger than 1920px on any side
+            max_size = 1920
+            if max(img.width, img.height) > max_size:
+                img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+            # Save as JPEG with 85% quality
             unique_name = unique_name.rsplit('.', 1)[0] + '.jpg'
             path = os.path.join(UPLOAD_DIR, unique_name)
-            img.save(path, 'JPEG', quality=90)
+            img.save(path, 'JPEG', quality=85, optimize=True)
             ext = 'jpg'
             media_type = 'image'
         else:
