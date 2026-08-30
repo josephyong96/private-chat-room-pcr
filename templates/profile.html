@@ -69,6 +69,7 @@
 {% endblock %}
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <script>
     const form = document.getElementById('profile-form');
     const fileInput = document.getElementById('profile_picture_input');
@@ -103,23 +104,44 @@
         });
     }
 
-    fileInput.addEventListener('change', function() {
+    async function prepareImage(file) {
+        const name = file.name.toLowerCase();
+        const type = file.type || '';
+        if (type === 'image/heic' || type === 'image/heif' || name.endsWith('.heic') || name.endsWith('.heif')) {
+            if (typeof heic2any === 'undefined') {
+                throw new Error('HEIC converter not loaded.');
+            }
+            return await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+        }
+        return file;
+    }
+
+    fileInput.addEventListener('change', async function() {
         const file = this.files[0];
         if (!file) return;
         croppedFile = null;
-        const url = URL.createObjectURL(file) + '?t=' + Date.now();
-        cropperImage.src = '';
-        modal.style.display = 'flex';
-        cropperImage.onload = function() {
-            initCropper();
-            cropperImage.onload = null;
-        };
-        cropperImage.onerror = function() {
-            alert('Failed to load image.');
-            modal.style.display = 'none';
-            cropperImage.onerror = null;
-        };
-        cropperImage.src = url;
+        try {
+            const imageBlob = await prepareImage(file);
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                cropperImage.onload = function() {
+                    modal.style.display = 'flex';
+                    initCropper();
+                };
+                cropperImage.onerror = function() {
+                    alert('Failed to load image.');
+                    modal.style.display = 'none';
+                };
+                cropperImage.src = e.target.result;
+            };
+            reader.onerror = function() {
+                alert('Failed to read image file.');
+            };
+            reader.readAsDataURL(imageBlob);
+        } catch (err) {
+            alert('Could not process image: ' + err.message);
+            fileInput.value = '';
+        }
     });
 
     document.getElementById('crop-cancel').addEventListener('click', function() {
@@ -165,7 +187,6 @@
 
     form.addEventListener('submit', function(e) {
         if (!croppedFile) {
-            // No new cropped image; allow normal submit unless a raw file is selected
             if (fileInput.files.length) {
                 e.preventDefault();
                 alert('Please finish cropping the photo first.');
