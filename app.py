@@ -114,6 +114,7 @@ def init_db():
             sender_id INTEGER NOT NULL,
             content TEXT,
             file_name TEXT,
+            file_url TEXT,
             file_type TEXT,
             media_type TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -173,6 +174,21 @@ def migrate_db():
         cur.execute("ALTER TABLE users ADD COLUMN status TEXT")
     if 'profile_picture' not in user_columns:
         cur.execute("ALTER TABLE users ADD COLUMN profile_picture TEXT")
+    
+    cur.execute("PRAGMA table_info(messages)")
+    msg_columns = {row[1] for row in cur.fetchall()}
+    if 'file_url' not in msg_columns:
+        cur.execute("ALTER TABLE messages ADD COLUMN file_url TEXT")
+        # Try to recover URLs for old media by matching uploads folder
+        try:
+            uploads = os.listdir(UPLOAD_DIR) if os.path.isdir(UPLOAD_DIR) else []
+            cur.execute("SELECT id, file_name FROM messages WHERE file_name IS NOT NULL AND file_url IS NULL")
+            for row in cur.fetchall():
+                matches = [f for f in uploads if f.endswith('_' + row[1])]
+                if matches:
+                    cur.execute("UPDATE messages SET file_url = ? WHERE id = ?", (f"/uploads/{matches[0]}", row[0]))
+        except Exception:
+            pass
     
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='push_subscriptions'")
     if not cur.fetchone():
@@ -334,7 +350,7 @@ def admin():
 def api_messages():
     conn = get_db()
     rows = conn.execute("""
-    SELECT m.id, m.sender_id, m.content, m.file_name, m.file_type, m.media_type, m.created_at, m.deleted,
+    SELECT m.id, m.sender_id, m.content, m.file_name, m.file_url, m.file_type, m.media_type, m.created_at, m.deleted,
            u.display_name, u.username, u.profile_picture
     FROM messages m
     JOIN users u ON m.sender_id = u.id
@@ -353,6 +369,7 @@ def api_messages():
             'profile_picture': r['profile_picture'],
             'content': r['content'],
             'file_name': r['file_name'],
+            'file_url': r['file_url'],
             'file_type': r['file_type'],
             'media_type': r['media_type'],
             'created_at': r['created_at'],
@@ -614,8 +631,8 @@ def handle_send_message(data):
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO messages (sender_id, content, file_name, file_type, media_type) VALUES (?, ?, ?, ?, ?)",
-        (user['id'], content, file_info.get('file_name'), file_info.get('file_type'), file_info.get('media_type'))
+        "INSERT INTO messages (sender_id, content, file_name, file_url, file_type, media_type) VALUES (?, ?, ?, ?, ?, ?)",
+        (user['id'], content, file_info.get('file_name'), file_info.get('file_url'), file_info.get('file_type'), file_info.get('media_type'))
     )
     message_id = cur.lastrowid
     conn.commit()
